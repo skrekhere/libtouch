@@ -279,20 +279,16 @@ void libtouch_progress_register_touch(libtouch_progress_tracker *t,
 	libtouch_gesture *g;
 	libtouch_action *a;
 	libtouch_gesture_progress *p;
-	printf("big1\n");
 	for (int i = 0; i < t->n_gestures; i++) {
-		printf("big2\n");
 
 		p = &t->gesture_progress[i];
 		g = p->gesture;
 		if(p->completed_actions == g->n_actions) {
-			printf("bad >:(\n");
 
 			//Gesture already completed, but not yet handled.
 			continue;
 		}
 		a = g->actions[p->completed_actions];
-		printf("%d, %d, %d, %d, %d, %d, %d, %d, %d\n", p->completed_actions, a->duration_ms, timestamp, p->last_action_timestamp, a->action_type, a->touch.mode, mode, (a->touch.mode & mode) == mode, libtouch_target_contains(a->target,x,y));
 		if ((p->completed_actions == 0 ||
 		     a->duration_ms > (timestamp - p->last_action_timestamp)) &&
 		    a->action_type == LIBTOUCH_ACTION_TOUCH &&
@@ -302,10 +298,8 @@ void libtouch_progress_register_touch(libtouch_progress_tracker *t,
 			
 			p->action_progress += 1.0 / ((double) a->threshold);
 
-			printf("big3 %lf\n", p->action_progress);
 
 			if(mode == LIBTOUCH_TOUCH_DOWN) {
-				printf("big4\n");
 				touch_list *tl = malloc(sizeof(touch_list));
 				tl->next = p->touches;
 				tl->data.slot = slot;
@@ -535,7 +529,6 @@ void libtouch_action_set_target(libtouch_action *action,
 void libtouch_action_set_duration(libtouch_action *action,
 				  uint32_t duration_ms) {
 	action->duration_ms = duration_ms;
-	printf("%d", action->duration_ms);
 }
 
 double libtouch_gesture_progress_get_progress(
