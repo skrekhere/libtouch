@@ -1,7 +1,9 @@
 #ifndef _LIBTOUCH_H
 #define _LIBTOUCH_H
 #include <stdint.h>
-
+#ifdef __cplusplus
+extern "C"{
+#endif 
 enum libtouch_action_type {
 	/**
 	 * Pressing or releasing a finger to or from the touch device.
@@ -72,6 +74,23 @@ struct libtouch_gesture_progress;
 
 struct libtouch_progress_tracker;
 
+typedef struct libtouch_target {
+	double x,y,w,h;
+
+} libtouch_target;
+
+typedef struct touch_data {
+	int slot;
+	double startx;
+	double starty;
+	double curx;
+	double cury;
+} touch_data;
+
+typedef struct touch_list {
+	touch_data data;
+	struct touch_list *next;
+} touch_list;
 
 /**
  * Represents the internal state. The only holder of state information.
@@ -103,21 +122,81 @@ struct libtouch_target;
  * Reference to gestures and their progress
  */
 
-struct libtouch_engine *libtouch_engine_create();
+typedef struct libtouch_action {
+	enum libtouch_action_type action_type;
+	double move_tolerance;
+	libtouch_target* target;
+	int threshold;
+	uint32_t duration_ms;
+	union {
+		//Touch Action
+		struct {
+			enum libtouch_touch_mode mode;
+		} touch;
+		//Move Action
+		struct {
+			enum libtouch_move_dir dir;
+		} move;
+		//Rotate Action
+		struct {
+			enum libtouch_rotate_dir dir;
+		} rotate;
+		//Pinch Action
+		struct {
+			enum libtouch_scale_dir dir;
+			
+		} pinch;
+		//Delay Action
+		struct {
+			
+		} delay;
+	};
+} libtouch_action;
 
-struct libtouch_gesture *libtouch_gesture_create(
-	struct libtouch_engine *engine);
+typedef struct libtouch_gesture {
+	libtouch_action **actions;
+	uint32_t n_actions;
+} libtouch_gesture;
+
+typedef struct libtouch_engine {
+	libtouch_gesture** gestures;
+	uint32_t n_gestures;
+	
+	libtouch_target **targets;
+	uint32_t n_targets;
+} libtouch_engine;
+
+typedef struct libtouch_gesture_progress {
+	libtouch_gesture *gesture;
+	uint32_t completed_actions;
+	uint32_t last_action_timestamp;
+
+	double action_progress;
+	
+	touch_list *touches;
+} libtouch_gesture_progress;
+
+typedef struct libtouch_progress_tracker {
+	libtouch_gesture_progress *gesture_progress;
+	uint32_t n_gestures;
+} libtouch_progress_tracker;
+
+
+ libtouch_engine *libtouch_engine_create();
+
+ libtouch_gesture *libtouch_gesture_create(
+	 libtouch_engine *engine);
 
 /** 
  * Set a min movement before it starts counting as movement.
  * useful for, for instance long pressing, in case of a not 100% stable finger
  * or to ignore possible miss-swipes 
  */
-void libtouch_action_move_tolerance(struct libtouch_action *action, double min);
+void libtouch_action_move_tolerance( libtouch_action *action, double min);
 
 
-struct libtouch_target *libtouch_target_create(
-	struct libtouch_engine *engine, double x, double y,
+ libtouch_target *libtouch_target_create(
+	 libtouch_engine *engine, double x, double y,
 	double width, double height);
 
 /**
@@ -127,7 +206,7 @@ struct libtouch_target *libtouch_target_create(
  * slot: the slot of this event (e.g. which finger the event was caused by)
  */
 void libtouch_progress_register_touch(
-	struct libtouch_progress_tracker *t,
+	 libtouch_progress_tracker *t,
 	uint32_t timestamp, int slot, enum libtouch_touch_mode mode,
 	double x, double y);
 
@@ -138,25 +217,25 @@ void libtouch_progress_register_touch(
  * slot: the slot of the event (e.g. which finger)
  */
 void libtouch_progress_register_move(
-	struct libtouch_progress_tracker *t,
+	 libtouch_progress_tracker *t,
 	uint32_t timestamp, int slot,
-	double dx, double dy);
+	double nx, double ny);
 
 
-struct libtouch_action *libtouch_gesture_add_touch(
-	struct libtouch_gesture *gesture, uint32_t mode);
+libtouch_action *libtouch_gesture_add_touch(
+	 libtouch_gesture *gesture, uint32_t mode);
 
-struct libtouch_action *libtouch_gesture_add_move(
-	struct libtouch_gesture *gesture, uint32_t direction);
+libtouch_action *libtouch_gesture_add_move(
+	libtouch_gesture *gesture, uint32_t direction);
 
-struct libtouch_action *libtouch_gesture_add_rotate(
-	struct libtouch_gesture *gesture, uint32_t direction);
+libtouch_action *libtouch_gesture_add_rotate(
+	 libtouch_gesture *gesture, uint32_t direction);
 
-struct libtouch_action *libtouch_gesture_add_pinch(
-	struct libtouch_gesture *gesture, uint32_t direction);
+ libtouch_action *libtouch_gesture_add_pinch(
+	 libtouch_gesture *gesture, uint32_t direction);
 
-struct libtouch_action *libtouch_gesture_add_delay(
-	struct libtouch_gesture *gesture, uint32_t duration);
+ libtouch_action *libtouch_gesture_add_delay(
+	 libtouch_gesture *gesture, uint32_t duration);
 
 
 
@@ -171,7 +250,7 @@ struct libtouch_action *libtouch_gesture_add_delay(
  * - LIBTOUCH_ACTION_DELAY:  milliseconds (must be positive)
  */
 void libtouch_action_set_threshold(
-	struct libtouch_action *action, int threshold);
+	 libtouch_action *action, int threshold);
 
 /**
  * Sets a libtouch_target that the action must reach to be considered complete.
@@ -181,8 +260,8 @@ void libtouch_action_set_threshold(
  * For LIBTOUCH_ACTION_TOUCH, target defines where we must press.
  */
 void libtouch_action_set_target(
-	struct libtouch_action *action,
-	struct libtouch_target *target);
+	 libtouch_action *action,
+	 libtouch_target *target);
 
 /**
  * Sets the minimum duration this action must take place during to be considered
@@ -190,30 +269,30 @@ void libtouch_action_set_target(
  * we can consider n fingers down within duration_ms to be a n-finger touch.
  */
 void libtouch_action_set_duration(
-	struct libtouch_action *action,
+	 libtouch_action *action,
 	uint32_t duration_ms);
 
 /**
  * Gets the current progress of this action between 0 and 1.
  */
 double libtouch_action_get_progress(
-	struct libtouch_progress_tracker *tracker);
+	 libtouch_progress_tracker *tracker);
 
 
 void libtouch_gesture_reset_progress(
-	struct libtouch_gesture_progress *gesture);
+	 libtouch_gesture_progress *gesture);
 
 /** Returns the active action for this gesture. */
-struct libtouch_action *libtouch_gesture_get_current_action(
-	struct libtouch_gesture_progress *gesture);
+ libtouch_action *libtouch_gesture_get_current_action(
+	 libtouch_gesture_progress *gesture);
 
 /**
  * Fills an array of libtouch_gesture_progress pointers
  * sorted by progress.
  */
 double libtouch_fill_progress_array(
-	struct libtouch_progress_tracker *tracker,
-	struct libtouch_gesture_progress **array,
+	 libtouch_progress_tracker *tracker,
+	 libtouch_gesture_progress **array,
 	uint32_t count);
 
 /**
@@ -222,19 +301,23 @@ double libtouch_fill_progress_array(
  *
  * Call repeatedly to get all finished gestures.
  */
-struct libtouch_gesture *libtouch_handle_finished_gesture(
-	struct libtouch_progress_tracker *tracker);
+ libtouch_gesture *libtouch_handle_finished_gesture(
+	 libtouch_progress_tracker *tracker);
 
-struct libtouch_progress_tracker *libtouch_progress_tracker_create(
-	struct libtouch_engine *engine);
+ libtouch_progress_tracker *libtouch_progress_tracker_create(
+	 libtouch_engine *engine);
 
 uint32_t libtouch_progress_tracker_n_gestures(
-	struct libtouch_progress_tracker *t);
+	 libtouch_progress_tracker *t);
 
-struct libtouch_gesture_progress *libtouch_gesture_get_progress(
-	struct libtouch_progress_tracker *y, uint32_t index);
+ libtouch_gesture_progress *libtouch_gesture_get_progress(
+	 libtouch_progress_tracker *y, uint32_t index);
 
 double libtouch_gesture_progress_get_progress(
-	struct libtouch_gesture_progress *gesture);
+	 libtouch_gesture_progress *gesture);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
